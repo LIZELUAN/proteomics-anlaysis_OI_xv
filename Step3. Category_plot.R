@@ -1,4 +1,4 @@
-setwd("C:/Users/oixra/Desktop/OI_WNT")
+setwd("C:/Users/oixra/Desktop/diann-4vs4-20230529")
 
 library(tidyverse)
 library(DEP)
@@ -118,7 +118,7 @@ x_test <- x %>%
 
 
 library(data.table)
-d <- setDT(x, keep.rownames = "Category")
+d <- setDT(x_test, keep.rownames = "Category")
 
 d_long <-melt(d,
               id.vars = c('Category'), 
@@ -186,6 +186,7 @@ write.csv(d,file="results/protein category detected.csv",row.names = F)
 
 
 d_long <- data.frame(d_long,Grp=rep(c("Control","OI"),each=40)) %>%
+ filter(!Group=="OI_IFITM5") %>%
   rename(Sample=Group) %>%
   filter(!(Category=="total"))
 
