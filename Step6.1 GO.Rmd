@@ -1,0 +1,544 @@
+```{r}
+setwd("C:/Users/may/Desktop/project/diann-4vs4-20230529")
+library(tidyverse)
+library(DEP)
+library(openxlsx)
+```
+
+
+```{r}
+data_up <- read_csv("GO enrichment/DEGlist_up.csv") 
+data_down <- read_csv("GO enrichment/DEGlist_down.csv") 
+###显示GO或KEGG的内容
+# if (!require("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("org.Hs.eg.db")
+
+library(org.Hs.eg.db)
+library(ggplot2)#柱状图和点状图
+library(stringr)#基因ID转换
+library(enrichplot)#GO,KEGG,GSEA
+library(clusterProfiler)#GO,KEGG,GSEA
+library(GOplot)#弦图，弦表图，系统聚类图
+library(DOSE)
+library(ggnewscale)
+library(topGO)#绘制通路网络图
+library(circlize)#绘制富集分析圈图
+library(ComplexHeatmap)#绘制图例
+library(clusterProfiler)
+memory.limit(size=100000000)
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+# install.packages("BiocManager")
+# BiocManager::install("clusterProfiler")
+
+library(Rgraphviz)
+```
+
+
+GO MF富集分析 up
+```{r}
+keytypes(org.Hs.eg.db)
+
+data_up <- data.frame(Gene=DEG_up)
+data_down <- data.frame(Gene=DEG_down)
+
+data_up$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_up$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+data_up <- na.omit(data_up)
+
+ego_MF <- enrichGO(gene          = data_up$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "MF",
+                   pAdjustMethod = "BH",
+                   #pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_MF <- barplot(ego_MF,showCategory = 100) + ggtitle("GO MF barplot for upper DEGs")+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p <- dotplot(ego_MF, title="Dotplot for upper DEGs") +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+
+p0=p_MF/p
+pdf('GO enrichment/GO_MF_up.pdf')
+p0
+dev.off()
+
+
+
+go_MF <- pairwise_termsim(ego_MF)
+pdf('所有基因富集分析/GO_BP network for top 30.pdf')
+enrichplot::emapplot(go_MF,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+
+
+
+ 
+GO MF富集分析 down
+```{r}
+data_down$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_down$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+data_down <- na.omit(data_down)
+
+ego_MF <- enrichGO(gene          = data_down$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "MF",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_MF <- barplot(ego_MF) + ggtitle("GO MF barplot for downer DEGs")+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p <- dotplot(ego_MF, title="Dotplot for downer DEGs") +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p0=p_MF/p
+
+pdf('GO enrichment/GO_MF_down.pdf')
+p0
+dev.off()
+
+
+go_MF <- pairwise_termsim(ego_MF)
+pdf('GO enrichment/GO_MF network for downer DEG.pdf')
+enrichplot::emapplot(go_MF,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+
+```
+
+
+
+GO CC 富集分析 up
+```{r}
+ego_CC <- enrichGO(gene          = data_up$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "CC",
+                   pAdjustMethod = "BH",
+                   #pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_CC <- barplot(ego_CC) + ggtitle("GO CC barplot for upper DEGs")+theme(axis.title = element_text(size=8),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+p <- dotplot(ego_CC, title="Dotplot for upper DEGs") +theme(axis.title = element_text(size=8),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+
+p0=p_CC/p
+
+
+
+pdf('GO enrichment/GO_CC_up.pdf')
+p0
+dev.off()
+
+
+go_CC <- pairwise_termsim(ego_CC)
+pdf('GO enrichment/GO_CC network for upper DEG.pdf')
+enrichplot::emapplot(go_CC,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+
+```
+
+
+ 
+GO CC富集分析 down
+```{r}
+ego_CC <- enrichGO(gene          = data_down$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "CC",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_CC <- barplot(ego_CC) + ggtitle("GO CC barplot for downer DEGs")+theme(axis.title = element_text(size=8),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+p <- dotplot(ego_CC, title="Dotplot for downer DEGs") +theme(axis.title = element_text(size=8),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+p0=p_CC/p
+
+pdf('GO enrichment/GO_CC_down.pdf')
+p0
+dev.off()
+
+
+go_CC <- pairwise_termsim(ego_CC)
+pdf('GO enrichment/GO_CC network for downer DEG.pdf')
+enrichplot::emapplot(go_CC,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+
+
+```
+
+
+
+GO BP 富集分析 up
+```{r}
+ego_BP <- enrichGO(gene          = data_up$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "BP",
+                   pAdjustMethod = "BH",
+                   #pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_BP <- barplot(ego_BP) + ggtitle("GO BP barplot for upper DEGs")+theme(axis.title = element_text(size=8),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+p <- dotplot(ego_BP, title="Dotplot for upper DEGs") +theme(axis.title = element_text(size=8),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=8),axis.text.x = element_text(size=8))
+
+
+p0=p_BP/p
+pdf('GO enrichment/GO_BP_up.pdf')
+p0
+dev.off()
+
+go_BP <- pairwise_termsim(ego_BP)
+pdf('GO enrichment/GO_BP network for upper DEG.pdf')
+enrichplot::emapplot(go_BP,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+
+```
+
+
+ 
+GO BP富集分析 down
+```{r}
+ego_BP <- enrichGO(gene          = data_down$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "BP",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_BP <- barplot(ego_BP) + ggtitle("GO BP barplot for downer DEGs")+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p <- dotplot(ego_BP, title="Dotplot for downer DEGs") +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p0=p_BP/p
+
+pdf('GO enrichment/GO_BP_down.pdf')
+p0
+dev.off()
+
+go_BP <- pairwise_termsim(ego_BP)
+pdf('GO enrichment/GO_BP network for downer DEG.pdf')
+enrichplot::emapplot(go_BP,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+GO ALL 富集分析 up
+```{r}
+keytypes(org.Hs.eg.db)
+
+data_up$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_up$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+data_up <- na.omit(data_up)
+
+ego_MF <- enrichGO(gene          = data_up$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "ALL",
+                   pAdjustMethod = "BH",
+                   #pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_MF <- barplot(ego_MF,showCategory = 100) + ggtitle("GO MF barplot for upper DEGs")+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p <- dotplot(ego_MF, title="Dotplot for upper DEGs") +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+
+p0=p_MF/p
+pdf('GO enrichment/GO_MF_up.pdf')
+p0
+dev.off()
+
+
+
+go_MF <- pairwise_termsim(ego_MF)
+pdf('所有基因富集分析/GO_BP network for top 30.pdf')
+enrichplot::emapplot(go_MF,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+
+
+
+ 
+GO ALL 富集分析 down
+```{r}
+data_down$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_down$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+data_down <- na.omit(data_down)
+
+ego_MF <- enrichGO(gene          = data_down$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "MF",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff  = 0.01,
+                   qvalueCutoff  = 0.05)
+
+
+p_MF <- barplot(ego_MF) + ggtitle("GO MF barplot for downer DEGs")+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p <- dotplot(ego_MF, title="Dotplot for downer DEGs") +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))
+
+p0=p_MF/p
+
+pdf('GO enrichment/GO_MF_down.pdf')
+p0
+dev.off()
+
+
+go_MF <- pairwise_termsim(ego_MF)
+pdf('GO enrichment/GO_MF network for downer DEG.pdf')
+enrichplot::emapplot(go_MF,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GO BP富集分析
+```{r}
+ego_BP <- enrichGO(gene          = data$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "BP",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff=1,
+                   qvalueCutoff  = 0.1)
+
+
+p_BP <- barplot(ego_BP,showCategory = 100) + ggtitle("GO BP barplot for all common DEGs")+theme(axis.title = element_text(size=4),plot.title=element_text(size=4,face = "bold.italic"),axis.text.y = element_text(size=4),axis.text.x = element_text(size=4))
+
+p <- dotplot(ego_BP, title="GO BP dotplot for all DEGs",showCategory = 200) +theme(axis.title = element_text(size=5),plot.title=element_text(size=8,face = "bold.italic"),axis.text.y = element_text(size=5),axis.text.x = element_text(size=5))
+
+p0=p_BP/p
+
+pdf('所有基因富集分析/所有基因/GO_BP2.pdf')
+p
+dev.off()
+# 富集分析树状图
+pdf(file="所有基因富集分析/enrich.go.bp.tree.pdf")
+plotGOgraph(ego_BP)
+dev.off()
+```
+
+仅展示感兴趣的GO BP富集
+```{r}
+ego_BP@result
+set <- c("GO:0035456",
+"GO:0035455",
+"GO:0034341",
+"GO:0032728",
+"GO:0035458",
+"GO:0032481",
+"GO:0034340",
+"GO:0071357",
+"GO:0035457",
+"GO:0032608",
+"GO:0032648",
+"GO:0060340",
+"GO:0060337",
+"GO:0071346",
+"GO:0060338",
+"GO:0032727",
+"GO:0032479",
+"GO:0032606",
+"GO:0060333",
+"GO:0032607",
+"GO:0032647",
+"GO:0032729",
+"GO:0060339",
+"GO:0032609",
+"GO:0032649",
+"GO:0032689"
+)
+# write.table(ego_BP@result, file='表格.txt', col.names=TRUE,row.names=TRUE,sep='\t')
+
+
+index <- which(ego_BP@result$ID %in% set)
+Description<-ego_BP@result$Description[index]
+
+pdf("所有基因富集分析/所有基因/interferon_related.pdf")
+barplot(ego_BP,showCategory=Description)+theme(axis.title = element_text(size=10),plot.title=element_text(size=12,face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))+ ggtitle("GO BP of down-regulated genes for interferon related terms")
+dev.off()
+
+
+
+```
+
+GO关联网络图
+```{r}
+go2 <- pairwise_termsim(ego_BP)
+pdf('所有基因富集分析/GO_BP network for top 30.pdf')
+enrichplot::emapplot(go2,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+
+GO合并分析
+```{r}
+ego_All <- enrichGO(gene          = data$ID,
+                   OrgDb         = 'org.Hs.eg.db',
+                   keyType       = 'ENTREZID',
+                   ont           = "ALL",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff  = 0.1,
+                   qvalueCutoff  = 0.3)
+
+head(ego_All)
+```
+
+```{r}
+pall <- barplot(ego_All,showCategory = 5,split='ONTOLOGY') + ggtitle("Top5 GO terms for each subclass")+theme(axis.title = element_text(size=7),plot.title=element_text(size=7,face = "bold.italic"),axis.text.y = element_text(size=7),axis.text.x = element_text(size=7))+facet_grid(ONTOLOGY~.,scales="free")
+
+pdf('所有基因富集分析/所有基因/GO_barplot.pdf')
+pall
+dev.off()
+
+
+
+
+p <- dotplot(ego_All, title="Top5 GO terms for up-regulated DEGs",showCategory = 5, split='ONTOLOGY') +theme(axis.title = element_text(size=10),plot.title=element_text(size=12, face = "bold.italic"),axis.text.y = element_text(size=10),axis.text.x = element_text(size=10))+facet_grid(ONTOLOGY~.,scales="free")
+
+pdf("所有基因富集分析/上调基因/GO_dotplot.pdf")
+p
+dev.off()
+
+
+
+
+```
+
+
+
+KEGG分析
+```{r}
+install.packages('R.utils')
+R.utils::setOption( "clusterProfiler.download.method",'auto' )
+
+
+ekegg <- enrichKEGG(gene=data$ID,
+                   organism = 'hsa',
+                   keyType="ncbi-geneid",
+                   pvalueCutoff  = 0.08,
+                   qvalueCutoff  =  0.1,
+                   pAdjustMethod = "BH")
+head(ekegg)
+
+p1 <- barplot(ekegg, showCategory=8,title="KEGG for up-regulated DEGs")+theme(axis.title = element_text(size=15),plot.title=element_text(size=15, face = "bold.italic"),axis.text.y = element_text(size=12),axis.text.x = element_text(size=15))
+p2 <- dotplot(ekegg, showCategory=10)+theme(axis.title = element_text(size=15),plot.title=element_text(size=15, face = "bold.italic"),axis.text.y = element_text(size=12),axis.text.x = element_text(size=15))
+plotc = p1/p2
+
+pdf('所有基因富集分析/所有基因/KEGG.pdf')
+p1
+dev.off()
+
+```
+
+KEGG关联网络图
+```{r}
+KEGG2 <- pairwise_termsim(ekegg)
+pdf('所有基因富集分析/pathway network.pdf')
+enrichplot::emapplot(KEGG2,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+

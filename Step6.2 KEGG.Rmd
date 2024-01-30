@@ -1,0 +1,110 @@
+```{r}
+setwd("C:/Users/may/Desktop/project/diann-4vs4-20230529")
+library(tidyverse)
+library(DEP)
+library(openxlsx)
+```
+
+
+```{r}
+data_up <- read_csv("GO enrichment/DEGlist_up.csv") 
+data_down <- read_csv("GO enrichment/DEGlist_down.csv") 
+###显示GO或KEGG的内容
+# if (!require("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("org.Hs.eg.db")
+
+library(org.Hs.eg.db)
+library(ggplot2)#柱状图和点状图
+library(stringr)#基因ID转换
+library(enrichplot)#GO,KEGG,GSEA
+library(clusterProfiler)#GO,KEGG,GSEA
+library(GOplot)#弦图，弦表图，系统聚类图
+library(DOSE)
+library(ggnewscale)
+library(topGO)#绘制通路网络图
+library(circlize)#绘制富集分析圈图
+library(ComplexHeatmap)#绘制图例
+library(clusterProfiler)
+memory.limit(size=100000000)
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+# install.packages("BiocManager")
+# BiocManager::install("clusterProfiler")
+
+library(Rgraphviz)
+```
+
+KEGG分析
+```{r}
+# install.packages('R.utils')
+# R.utils::setOption( "clusterProfiler.download.method",'auto' )
+
+
+
+
+library(R.utils)
+
+R.utils::setOption("clusterProfiler.download.method","auto")
+
+data_up$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_up$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+data_down$ID = mapIds(x=org.Hs.eg.db,
+                      keys= data_down$Gene,
+                      keytype="SYMBOL",
+                      column="ENTREZID")
+
+
+ekegg <- enrichKEGG(gene=data_up$ID,
+                   organism = 'hsa',
+                   keyType="ncbi-geneid",
+                   pvalueCutoff  = 0.05,
+                   qvalueCutoff  =  0.1,
+                   pAdjustMethod = "BH")
+head(ekegg)
+
+
+gse <- gseGO(geneList=gene_list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = organism, 
+             pAdjustMethod = "none")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+p1 <- barplot(ekegg, showCategory=8,title="KEGG for up-regulated DEGs")+theme(axis.title = element_text(size=15),plot.title=element_text(size=15, face = "bold.italic"),axis.text.y = element_text(size=12),axis.text.x = element_text(size=15))
+p2 <- dotplot(ekegg, showCategory=10)+theme(axis.title = element_text(size=15),plot.title=element_text(size=15, face = "bold.italic"),axis.text.y = element_text(size=12),axis.text.x = element_text(size=15))
+plotc = p1/p2
+
+pdf('所有基因富集分析/所有基因/KEGG.pdf')
+p1
+dev.off()
+
+```
+
+KEGG关联网络图
+```{r}
+KEGG2 <- pairwise_termsim(ekegg)
+pdf('所有基因富集分析/pathway network.pdf')
+enrichplot::emapplot(KEGG2,showCategory =100, color = "p.adjust", layout = "kk")
+dev.off()
+```
+
