@@ -2,6 +2,7 @@ setwd("C:/Users/may/Desktop/project/diann-4vs4-20230529")
 library(tidyverse)
 library(DEP)
 library(openxlsx)
+
 ## ========================= Start from here ============================ #
 up <- (DEG %>% filter(change=="Up")) %>% select(Gene)
 down <- (DEG %>% filter(change=="Down")) %>% select(Gene)
