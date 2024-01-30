@@ -2,40 +2,6 @@ setwd("C:/Users/may/Desktop/project/diann-4vs4-20230529")
 library(tidyverse)
 library(DEP)
 library(openxlsx)
-# BiocManager::install("DEP")
-# colnames(da)
-da <- read_csv("txt/report.pg_matrix.csv") %>%
-  mutate(across(starts_with("Control")|starts_with("OI"), ~log2(.x)))
-da$`Genes` %>% duplicated() %>% any()
-
-## if TRUE  :) #######################
-# Find the duplicated genes
-da %>% group_by(`Genes`) %>% summarise(frequency = n()) %>%
-  arrange(desc(frequency)) %>% filter(frequency > 1)
-
-# 确保基因名唯一
-# 使用Gene.names中的注释作为主要名称,使用Protein.IDs中的注释作为没有基因名的蛋白质的ID
-da <- make_unique(da,"Genes","Protein.Ids",delim = ";")
-
-# 验证
-da$name %>% duplicated() %>% any()
-# [1] FALSE
-
-da <- da %>%
-  select(name, starts_with("Control"), starts_with("OI")) %>%
-  select(-Control1) %>%
-  select(-OI1) %>%
-  rename(Gene="name")
-
-
-da <- da %>%
-  rowwise() %>%
-  mutate(Num_valid_Ctrl = sum(!is.na(c_across(starts_with("Control"))))) %>%
-  mutate(Num_valid_OI = sum(!is.na(c_across(starts_with("OI"))))) %>% ungroup() %>%
-  filter(!(Num_valid_Ctrl+Num_valid_OI==0))
-
-
-
 ##################Output statistical result#############################
 write.csv(deg,file="DEG results/DEG.csv",row.names = F)
 
